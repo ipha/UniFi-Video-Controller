@@ -1,9 +1,5 @@
 #!/bin/bash
 
-# Start up w/ the right umask
-echo "[info] UMASK defined as '${UMASK}'." | ts '%Y-%m-%d %H:%M:%.S'
-umask "${UMASK}"
-
 # Options fed into unifi-video script
 unifi_video_opts=""
 
@@ -22,18 +18,6 @@ function graceful_shutdown {
 # Trap SIGTERM for graceful exit
 trap graceful_shutdown SIGTERM
 
-# Change user nobody's UID to custom or match unRAID.
-echo "[info] PUID defined as '${PUID}'" | ts '%Y-%m-%d %H:%M:%.S'
-
-# Set user unify-video to specified user id (non unique)
-usermod -o -u "${PUID}" unifi-video &>/dev/null
-
-# Change group users to GID to custom or match unRAID.
-echo "[info] PGID defined as '${PGID}'" | ts '%Y-%m-%d %H:%M:%.S'
-
-# Set group users to specified group id (non unique)
-groupmod -o -g "${PGID}" unifi-video &>/dev/null
-
 # Create logs directory
 mkdir -p /var/lib/unifi-video/logs
 
@@ -45,27 +29,8 @@ if [[ ! -f "/var/lib/unifi-video/perms.txt" ]]; then
   volumes=( "/var/lib/unifi-video" )
 
   # Set user and group ownership of volumes.
-  if ! chown -R "${PUID}":"${PGID}" "${volumes[@]}"; then
+  if ! chown -R unifi-video:unifi-video "${volumes[@]}"; then
     echo "[warn] Unable to chown ${volumes[*]}." | ts '%Y-%m-%d %H:%M:%.S'
-  fi
-
-  # Check for umask 002, set permissions to 775 folders and 664 files.
-  if [[ "${UMASK}" -eq 002 ]]; then
-    if ! chmod -R a=,a+rX,u+w,g+w "${volumes[@]}"; then
-      echo "[warn] Unable to chmod ${volumes[*]}." | ts '%Y-%m-%d %H:%M:%.S'
-    fi
-  fi
-
-  # Check for umask 022, set permissions to 755 folders and 644 files.
-  if [[ "${UMASK}" -eq 022 ]]; then
-    if ! chmod -R a=,a+rX,u+w "${volumes[@]}"; then
-      echo "[warn] Unable to chmod ${volumes[*]}." | ts '%Y-%m-%d %H:%M:%.S'
-    fi
-  fi
-
-  # Warn when neither umask 002 or 022 is set.
-  if [[ "${UMASK}" -ne 002 ]] && [[ "${UMASK}" -ne 022 ]]; then
-    echo "[warn] Umask not set to 002 or 022, skipping chmod." | ts '%Y-%m-%d %H:%M:%.S'
   fi
 
   echo "This file prevents permissions from being applied/re-applied to /config, if you want to reset permissions then please delete this file and restart the container." > /var/lib/unifi-video/perms.txt
