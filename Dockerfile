@@ -13,8 +13,7 @@ ENV LANGUAGE en_US.UTF-8
 ENV PUID="99" PGID="100" UMASK="002"
 
 # Add needed patches and scripts
-ADD unifi-video.patch /unifi-video.patch
-ADD run.sh /run.sh
+COPY root/ /
 
 # Add mongodb repo, key, update and install needed packages
 RUN apt-key adv --keyserver hkp://keyserver.ubuntu.com:80 --recv 9DA31620334BD75D9DCB49F368818C72E52529D4 && \
